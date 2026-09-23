@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerGrid CMMS Enterprise - Electrical & HV Project Services Management</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        amber: { 400: '#fbbf24', 500: '#f59e0b' },
+                        rose: { 500: '#f43f5e', 600: '#e11d48' },
+                        emerald: { 500: '#10b981', 600: '#059669' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .sld-node {
+            transition: all 0.2s ease-in-out;
+        }
+        .sld-node:hover {
+            transform: scale(1.05);
+            filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.6));
+        }
+        .animate-pulse-fast {
+            animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
+
+    <!-- LOGIN MODAL / SCREEN OVERLAY -->
+    <div id="loginOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-xl p-4">
+        <div class="glass-panel w-full max-w-md p-6 sm:p-8 rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-36 h-36 bg-sky-500/10 rounded-full blur-2xl"></div>
+            <div class="absolute -bottom-12 -left-12 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl"></div>
+            
+            <div class="text-center mb-6 relative z-10">
+                <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-sky-600 to-amber-500 flex items-center justify-center text-white text-3xl font-extrabold shadow-lg shadow-sky-500/30 mb-3">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <h1 class="text-xl font-bold text-slate-100">PowerGrid <span class="text-amber-400">CMMS</span> Enterprise</h1>
+                <p class="text-xs text-slate-400 mt-1">High Voltage & Electrical Asset Management System</p>
+            </div>
+
+            <!-- Preset Quick Login Selector -->
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-slate-400 uppercase mb-2">Login Cepat Peran (Demo Preset):</label>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button type="button" onclick="presetLogin('admin')" class="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-sky-500 text-left transition">
+                        <div class="font-bold text-sky-400"><i class="fa-solid fa-user-shield mr-1"></i> Super Admin</div>
+                        <div class="text-[10px] text-slate-500">Akses Penuh Seluruh Sistem</div>
+                    </button>
+                    <button type="button" onclick="presetLogin('lead')" class="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-indigo-500 text-left transition">
+                        <div class="font-bold text-indigo-400"><i class="fa-solid fa-user-gear mr-1"></i> Lead Engineer</div>
+                        <div class="text-[10px] text-slate-500">Approval, SLD & CBM</div>
+                    </button>
+                    <button type="button" onclick="presetLogin('tech')" class="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500 text-left transition">
+                        <div class="font-bold text-emerald-400"><i class="fa-solid fa-screwdriver-wrench mr-1"></i> Engineer/Teknisi</div>
+                        <div class="text-[10px] text-slate-500">WO, LOTO, PTW & DGA</div>
+                    </button>
+                    <button type="button" onclick="presetLogin('client')" class="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500 text-left transition">
+                        <div class="font-bold text-amber-400"><i class="fa-solid fa-building mr-1"></i> Client Portal</div>
+                        <div class="text-[10px] text-slate-500">View SLA & Billing Summary</div>
+                    </button>
+                </div>
+            </div>
+
+            <form id="loginForm" class="space-y-4 text-xs relative z-10">
+                <div>
+                    <label class="block text-slate-400 mb-1">Username / ID Karyawan</label>
+                    <input type="text" id="loginUsername" required value="admin_hv" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Password</label>
+                    <input type="password" id="loginPassword" required value="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Role Utama</label>
+                    <select id="loginRole" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-sky-500">
+                        <option value="admin">Super Admin (All Modules)</option>
+                        <option value="lead">Lead Engineer / Site Manager</option>
+                        <option value="tech">Electrical Engineer / Technician</option>
+                        <option value="warehouse">Warehouse & Procurement</option>
+                        <option value="client">Client Representative / Owner</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-500 hover:to-sky-600 text-white font-bold rounded-lg shadow-lg shadow-sky-600/30 transition">
+                    Masuk ke Sistem CMMS &rarr;
+                </button>
+            </form>
+            <p class="text-[10px] text-slate-500 text-center mt-4">Offline Mode Capable • LocalStorage Sync Persisted</p>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER (HIDDEN UNTIL LOGIN) -->
+    <div id="mainApp" class="flex-1 flex flex-col md:flex-row min-h-0 hidden">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside id="sidebar" class="w-full md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0 z-20 transition-all duration-300">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-sky-600 to-amber-500 flex items-center justify-center text-white font-bold text-lg shadow">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-slate-100 leading-none text-sm">PowerGrid <span class="text-amber-400">CMMS</span></h1>
+                        <span class="text-[10px] text-slate-400">HV & MV Project Services</span>
+                    </div>
+                </div>
+                <button id="mobileMenuToggle" class="md:hidden text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Dynamic Menu List -->
+            <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-xs font-medium" id="mainNav">
+                <a href="#dashboard" data-tab="dashboard" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-sky-600 text-white">
+                    <i class="fa-solid fa-chart-line w-5 text-center"></i>
+                    <span>Dashboard KPI</span>
+                </a>
+                <a href="#assets" data-tab="assets" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i class="fa-solid fa-transformer w-5 text-center"></i>
+                    <span>Master Aset Kelistrikan</span>
+                </a>
+                <a href="#sld" data-tab="sld" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i class="fa-solid fa-diagram-project w-5 text-center text-amber-400"></i>
+                    <span>Single Line Diagram (SLD)</span>
+                </a>
+                <a href="#workorders" data-tab="workorders" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i class="fa-solid fa-clipboard-list w-5 text-center"></i>
+                    <span>Work Orders (WO)</span>
+                </a>
+                <a href="#safety" data-tab="safety" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i class="fa-solid fa-shield-halved w-5 text-center text-rose-400"></i>
+                    <span>Safety (LOTO & PTW)</span>
+                </a>
+                <a href="#diagnostics" data-tab="diagnostics" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i class="fa-solid fa-microscope w-5 text-center text-sky-400"></i>
+                    <span>Testing (DGA, Thermo, Relay)</span>
+                </a>
+                <a href="#cbm" data-tab="cbm" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i class="fa-solid fa-tower-broadcast w-5 text-center text-emerald-400"></i>
+                    <span>CBM & IoT Telemetry</span>
+                </a>
+                <a href="#inventory" data-tab="inventory" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i class="fa-solid fa-boxes-stacked w-5 text-center"></i>
+                    <span>Inventory & Supply Chain</span>
+                </a>
+                <a href="#billing" data-tab="billing" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i class="fa-solid fa-file-invoice-dollar w-5 text-center text-amber-400"></i>
+                    <span>Billing & Client Portal</span>
+                </a>
+                <a href="#settings" data-tab="settings" class="nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i class="fa-solid fa-sliders w-5 text-center"></i>
+                    <span>Settings & Offline Sync</span>
+                </a>
+            </nav>
+
+            <!-- Network Status Indicator -->
+            <div class="p-3 border-t border-slate-800 bg-slate-900/90">
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800 text-[11px]">
+                    <div class="flex items-center space-x-2">
+                        <span id="statusIndicatorDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="statusIndicatorText" class="font-medium text-emerald-400">ONLINE MODE</span>
+                    </div>
+                    <button id="toggleOnlineMode" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700">Simulasi Toggle</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-950">
+            <!-- TOP APP BAR -->
+            <header class="h-16 bg-slate-900 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between z-10 flex-shrink-0">
+                <!-- Multi-Site & Multi-Client Selector -->
+                <div class="flex items-center space-x-3">
+                    <label for="siteSelector" class="hidden sm:inline-block text-xs font-semibold text-slate-400 uppercase">Site / Gardu:</label>
+                    <select id="siteSelector" class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-sky-500">
+                        <option value="ALL">-- SEMUA SITE & CLIENT --</option>
+                        <option value="GI Cilegon 150kV">GI Cilegon 150kV - Client: PT PLN (Persero)</option>
+                        <option value="Substation Bintaro 20kV">Substation Bintaro 20kV - Client: Data Center Project</option>
+                        <option value="Indramayu Substation">Indramayu Substation 500kV - Client: Power Grid Indo</option>
+                    </select>
+                </div>
+
+                <!-- Quick Actions & User Profile -->
+                <div class="flex items-center space-x-3">
+                    <button id="btnOpenQrScanner" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg flex items-center space-x-1 border border-slate-700">
+                        <i class="fa-solid fa-qrcode text-amber-400"></i>
+                        <span class="hidden sm:inline">QR Scanner</span>
+                    </button>
+
+                    <button id="btnQuickWO" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg flex items-center space-x-1 shadow">
+                        <i class="fa-solid fa-plus"></i>
+                        <span class="hidden sm:inline">Work Request</span>
+                    </button>
+
+                    <!-- Active User Badge & Logout -->
+                    <div class="flex items-center space-x-3 pl-3 border-l border-slate-800">
+                        <div class="text-right hidden sm:block">
+                            <div id="userDisplayName" class="text-xs font-bold text-slate-200">Eng. Hendra W.</div>
+                            <div id="userDisplayRole" class="text-[10px] text-sky-400 font-mono">Super Admin</div>
+                        </div>
+                        <button id="btnLogout" title="Logout" class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 hover:bg-rose-600 hover:border-rose-500 flex items-center justify-center text-slate-300 hover:text-white transition">
+                            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- SCROLLABLE TAB CONTENTS -->
+            <div id="contentArea" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+
+                <!-- ================= TAB 1: DASHBOARD KPI ================= -->
+                <section id="tab-dashboard" class="tab-content space-y-6">
+                    <!-- KPI Cards Row -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                        <div class="glass-panel p-3 rounded-xl border-l-4 border-emerald-500">
+                            <div class="text-slate-400 text-[10px] font-semibold uppercase">Total Asset</div>
+                            <div class="text-xl font-extrabold text-slate-100 mt-0.5" id="kpiTotalAssets">24</div>
+                            <div class="text-[9px] text-emerald-400">100% Registered</div>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl border-l-4 border-sky-500">
+                            <div class="text-slate-400 text-[10px] font-semibold uppercase">Active WO</div>
+                            <div class="text-xl font-extrabold text-slate-100 mt-0.5" id="kpiActiveWo">5</div>
+                            <div class="text-[9px] text-sky-400">2 In Progress</div>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl border-l-4 border-rose-500">
+                            <div class="text-slate-400 text-[10px] font-semibold uppercase">Critical Defect</div>
+                            <div class="text-xl font-extrabold text-rose-400 mt-0.5" id="kpiCriticalDefect">1</div>
+                            <div class="text-[9px] text-rose-400">Requires Outage</div>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl border-l-4 border-amber-500">
+                            <div class="text-slate-400 text-[10px] font-semibold uppercase">Availability</div>
+                            <div class="text-xl font-extrabold text-slate-100 mt-0.5" id="kpiAvailability">99.6%</div>
+                            <div class="text-[9px] text-amber-400">Target >99%</div>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl border-l-4 border-indigo-500">
+                            <div class="text-slate-400 text-[10px] font-semibold uppercase">MTBF (Hrs)</div>
+                            <div class="text-xl font-extrabold text-slate-100 mt-0.5" id="kpiMtbf">840h</div>
+                            <div class="text-[9px] text-indigo-400">+5.2% vs last mo</div>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl border-l-4 border-purple-500">
+                            <div class="text-slate-400 text-[10px] font-semibold uppercase">MTTR (Hrs)</div>
+                            <div class="text-xl font-extrabold text-slate-100 mt-0.5" id="kpiMttr">2.4h</div>
+                            <div class="text-[9px] text-purple-400">-10% Downtime</div>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl border-l-4 border-teal-500">
+                            <div class="text-slate-400 text-[10px] font-semibold uppercase">OEE Overall</div>
+                            <div class="text-xl font-extrabold text-slate-100 mt-0.5" id="kpiOee">91.5%</div>
+                            <div class="text-[9px] text-teal-400">World Class</div>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl border-l-4 border-slate-500">
+                            <div class="text-slate-400 text-[10px] font-semibold uppercase">Stock Value</div>
+                            <div class="text-base font-extrabold text-slate-100 mt-1" id="kpiStockValue">Rp 1.4B</div>
+                            <div class="text-[9px] text-slate-400">4 Warehouse</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel p-5 rounded-xl border border-slate-800">
+                            <h2 class="font-semibold text-slate-200 text-xs uppercase tracking-wider mb-3">Asset Health Index</h2>
+                            <div class="h-56 relative"><canvas id="assetHealthChart"></canvas></div>
+                        </div>
+                        <div class="glass-panel p-5 rounded-xl border border-slate-800 lg:col-span-2">
+                            <h2 class="font-semibold text-slate-200 text-xs uppercase tracking-wider mb-3">Work Order Execution Trend (Monthly)</h2>
+                            <div class="h-56 relative"><canvas id="woStatusChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- Live Critical Alerts -->
+                    <div class="glass-panel rounded-xl border border-slate-800 p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="font-semibold text-slate-200 text-xs uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+                                Work Order Kritis & Alarm CBM Real-time
+                            </h2>
+                            <a href="#workorders" onclick="switchTab('workorders')" class="text-xs text-sky-400 hover:underline">Lihat Semua WO &rarr;</a>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-300">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px]">
+                                    <tr>
+                                        <th class="p-2.5">No. WO</th>
+                                        <th class="p-2.5">Aset Kunci</th>
+                                        <th class="p-2.5">Pekerjaan</th>
+                                        <th class="p-2.5">Prioritas</th>
+                                        <th class="p-2.5">Status</th>
+                                        <th class="p-2.5">Lead Teknisi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboardWoTable" class="divide-y divide-slate-800/60"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= TAB 2: ASSET MANAGEMENT ================= -->
+                <section id="tab-assets" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="relative flex-1 max-w-md">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                            <input type="text" id="assetSearchInput" placeholder="Cari ID, Nama Trafo, Switchgear, atau Cubicle..." class="w-full pl-8 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <select id="assetCategoryFilter" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-slate-300">
+                                <option value="ALL">Semua Kategori</option>
+                                <option value="Transformer">Power Transformer</option>
+                                <option value="MV Switchgear">MV Switchgear</option>
+                                <option value="Substation Relay">Relay Proteksi</option>
+                                <option value="HV Disconnector">HV Disconnector</option>
+                                <option value="LV Panel">LV Switchboard</option>
+                            </select>
+                            <button id="btnOpenAddAsset" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium px-3 py-2 rounded-lg flex items-center space-x-1">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Tambah Aset</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-xl border border-slate-800 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-300">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                                    <tr>
+                                        <th class="p-3">ID & Nama Aset</th>
+                                        <th class="p-3">Kategori & Tegangan</th>
+                                        <th class="p-3">Site / Gardu</th>
+                                        <th class="p-3">Rating / Kapasitas</th>
+                                        <th class="p-3">Hour Meter (HM)</th>
+                                        <th class="p-3">Status Operasi</th>
+                                        <th class="p-3 text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="assetTableBody" class="divide-y divide-slate-800"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= TAB 3: DIGITAL SINGLE LINE DIAGRAM (SLD) ================= -->
+                <section id="tab-sld" class="tab-content hidden space-y-6">
+                    <div class="glass-panel p-5 rounded-xl border border-slate-800">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                            <div>
+                                <h2 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-diagram-project text-amber-400"></i>
+                                    Interactive Substation Single Line Diagram (SLD)
+                                </h2>
+                                <p class="text-xs text-slate-400">Skema kelistrikan live GI 150kV -> Trafo Utama -> MV Switchgear 20kV -> LV Panel.</p>
+                            </div>
+                            <div class="flex items-center space-x-2 text-xs">
+                                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Energized</span>
+                                <span class="flex items-center gap-1 ml-2"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Tripped</span>
+                                <span class="flex items-center gap-1 ml-2"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Maintenance</span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas SLD Flow -->
+                        <div class="bg-slate-950 p-6 rounded-xl border border-slate-800 relative overflow-x-auto min-w-[700px]">
+                            <!-- Busbar 150kV -->
+                            <div class="text-center text-[11px] font-mono text-amber-400 font-bold mb-1">BUSBAR HIGH VOLTAGE 150kV</div>
+                            <div class="h-2 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 rounded my-2 shadow-lg shadow-amber-500/20"></div>
+
+                            <!-- Disconnector & Breaker Row -->
+                            <div class="flex justify-around items-center my-6">
+                                <div class="sld-node bg-slate-900 border-2 border-emerald-500 p-3 rounded-lg text-center cursor-pointer w-44" onclick="inspectSldNode('DS-500-A2')">
+                                    <div class="text-[10px] text-slate-400 font-mono">DS-500-A2</div>
+                                    <div class="text-xs font-bold text-slate-100">HV Disconnector</div>
+                                    <div class="text-[9px] text-rose-400 mt-1 font-semibold">STATUS: TRIPPED</div>
+                                </div>
+                                <div class="h-8 w-0.5 bg-slate-700"></div>
+                                <div class="sld-node bg-slate-900 border-2 border-emerald-500 p-3 rounded-lg text-center cursor-pointer w-44" onclick="inspectSldNode('TRF-150-01')">
+                                    <div class="text-[10px] text-slate-400 font-mono">TRF-150-01</div>
+                                    <div class="text-xs font-bold text-sky-400">Trafo Utama 60MVA</div>
+                                    <div class="text-[9px] text-emerald-400 mt-1 font-semibold">150kV / 20kV ENERGIZED</div>
+                                </div>
+                            </div>
+
+                            <!-- Busbar 20kV -->
+                            <div class="text-center text-[11px] font-mono text-sky-400 font-bold mb-1">BUSBAR MEDIUM VOLTAGE 20kV (MV SWITCHGEAR)</div>
+                            <div class="h-2 bg-gradient-to-r from-sky-500 via-sky-400 to-sky-500 rounded my-2 shadow-lg shadow-sky-500/20"></div>
+
+                            <!-- Outgoing Feeders Row -->
+                            <div class="grid grid-cols-3 gap-4 my-6 text-center">
+                                <div class="sld-node bg-slate-900 border border-slate-700 p-3 rounded-lg cursor-pointer" onclick="inspectSldNode('CB-20-C01')">
+                                    <div class="text-[10px] text-slate-400 font-mono">CB-20-C01</div>
+                                    <div class="text-xs font-bold text-slate-200">Vacuum Circuit Breaker 1</div>
+                                    <span class="text-[9px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 inline-block mt-1">Normal</span>
+                                </div>
+                                <div class="sld-node bg-slate-900 border border-slate-700 p-3 rounded-lg cursor-pointer" onclick="inspectSldNode('RLY-SEL-751')">
+                                    <div class="text-[10px] text-slate-400 font-mono">RLY-SEL-751</div>
+                                    <div class="text-xs font-bold text-slate-200">Feeder Relay Proteksi</div>
+                                    <span class="text-[9px] bg-sky-950 text-sky-400 px-2 py-0.5 rounded border border-sky-800 inline-block mt-1">Active Monitoring</span>
+                                </div>
+                                <div class="sld-node bg-slate-900 border border-slate-700 p-3 rounded-lg cursor-pointer" onclick="inspectSldNode('LVP-MAIN-01')">
+                                    <div class="text-[10px] text-slate-400 font-mono">LVP-MAIN-01</div>
+                                    <div class="text-xs font-bold text-slate-200">LV Switchboard 400V</div>
+                                    <span class="text-[9px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded border border-amber-800 inline-block mt-1">Under Maintenance</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= TAB 4: WORK ORDERS MANAGEMENT ================= -->
+                <section id="tab-workorders" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center space-x-2">
+                            <button id="btnWoListView" class="px-3 py-1.5 bg-sky-600 text-white text-xs rounded-lg font-medium">List View</button>
+                            <button id="btnWoKanbanView" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg font-medium">Kanban Board</button>
+                        </div>
+                        <button id="btnOpenCreateWO" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium px-3 py-2 rounded-lg flex items-center space-x-1">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Buat Work Order Baru</span>
+                        </button>
+                    </div>
+
+                    <!-- List View -->
+                    <div id="woListContainer" class="glass-panel rounded-xl border border-slate-800 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-300">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                                    <tr>
+                                        <th class="p-3">No. WO</th>
+                                        <th class="p-3">Judul Pekerjaan</th>
+                                        <th class="p-3">Aset Target</th>
+                                        <th class="p-3">Lead Engineer</th>
+                                        <th class="p-3">Izin K3/Permit</th>
+                                        <th class="p-3">Estimasi Biaya</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3 text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="woTableBody" class="divide-y divide-slate-800"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Kanban View -->
+                    <div id="woKanbanContainer" class="hidden grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex flex-col">
+                            <div class="flex items-center justify-between mb-3 text-xs font-bold text-amber-400 uppercase">
+                                <span>Pending Approval</span>
+                                <span id="countPendingApproval" class="bg-slate-800 px-2 py-0.5 rounded text-slate-300">0</span>
+                            </div>
+                            <div id="kanbanPending" class="space-y-3 flex-1 overflow-y-auto min-h-[220px]"></div>
+                        </div>
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex flex-col">
+                            <div class="flex items-center justify-between mb-3 text-xs font-bold text-sky-400 uppercase">
+                                <span>Scheduled</span>
+                                <span id="countScheduled" class="bg-slate-800 px-2 py-0.5 rounded text-slate-300">0</span>
+                            </div>
+                            <div id="kanbanScheduled" class="space-y-3 flex-1 overflow-y-auto min-h-[220px]"></div>
+                        </div>
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex flex-col">
+                            <div class="flex items-center justify-between mb-3 text-xs font-bold text-indigo-400 uppercase">
+                                <span>In Progress</span>
+                                <span id="countInProgress" class="bg-slate-800 px-2 py-0.5 rounded text-slate-300">0</span>
+                            </div>
+                            <div id="kanbanInProgress" class="space-y-3 flex-1 overflow-y-auto min-h-[220px]"></div>
+                        </div>
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex flex-col">
+                            <div class="flex items-center justify-between mb-3 text-xs font-bold text-emerald-400 uppercase">
+                                <span>Completed</span>
+                                <span id="countCompleted" class="bg-slate-800 px-2 py-0.5 rounded text-slate-300">0</span>
+                            </div>
+                            <div id="kanbanCompleted" class="space-y-3 flex-1 overflow-y-auto min-h-[220px]"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= TAB 5: SAFETY (LOTO & PERMIT TO WORK) ================= -->
+                <section id="tab-safety" class="tab-content hidden space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Digital LOTO Management -->
+                        <div class="glass-panel p-5 rounded-xl border border-slate-800 space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                                <h2 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-lock text-rose-500"></i>
+                                    Digital Lockout / Tagout (LOTO) Register
+                                </h2>
+                                <button onclick="addLotoRegister()" class="text-xs px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded">
+                                    + Apply LOTO Tag
+                                </button>
+                            </div>
+                            <div class="space-y-3" id="lotoRegisterList"></div>
+                        </div>
+
+                        <!-- Permit To Work (PTW) -->
+                        <div class="glass-panel p-5 rounded-xl border border-slate-800 space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                                <h2 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-file-contract text-emerald-400"></i>
+                                    Permit To Work (PTW) K3 Listrik
+                                </h2>
+                                <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">High Voltage Safety Standard</span>
+                            </div>
+                            <div class="space-y-3" id="ptwList"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= TAB 6: DIAGNOSTICS & ELECTRICAL TESTING ================= -->
+                <section id="tab-diagnostics" class="tab-content hidden space-y-6">
+                    <!-- DGA Transformer Oil Analysis -->
+                    <div class="glass-panel p-5 rounded-xl border border-slate-800 space-y-4">
+                        <h2 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-vial text-amber-400"></i>
+                            Dissolved Gas Analysis (DGA) & Minyak Trafo (Duval Triangle)
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                                <div class="text-xs font-bold text-sky-400">Input Sample Gas DGA</div>
+                                <div class="grid grid-cols-2 gap-2 text-[11px]">
+                                    <div><label class="text-slate-400">H2 (PPM):</label><input id="dgaH2" type="number" value="45" class="w-full bg-slate-900 border border-slate-800 rounded p-1 text-slate-200"></div>
+                                    <div><label class="text-slate-400">CH4 (PPM):</label><input id="dgaCH4" type="number" value="120" class="w-full bg-slate-900 border border-slate-800 rounded p-1 text-slate-200"></div>
+                                    <div><label class="text-slate-400">C2H2 (PPM):</label><input id="dgaC2H2" type="number" value="15" class="w-full bg-slate-900 border border-slate-800 rounded p-1 text-slate-200"></div>
+                                    <div><label class="text-slate-400">C2H4 (PPM):</label><input id="dgaC2H4" type="number" value="85" class="w-full bg-slate-900 border border-slate-800 rounded p-1 text-slate-200"></div>
+                                </div>
+                                <button onclick="calculateDgaFault()" class="w-full py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-semibold">Hitung Diagnosa Duval</button>
+                            </div>
+                            <div class="md:col-span-2 p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-xs font-bold text-slate-200 mb-1">Hasil Analisis Indikasi Indikasi Gangguan:</div>
+                                    <div id="dgaResultBox" class="text-xs text-amber-400 font-semibold p-3 rounded bg-amber-950/40 border border-amber-800/60">
+                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Thermal Fault T2 (300°C - 700°C) / Overheating pada Overload Tap Changer
+                                    </div>
+                                </div>
+                                <div class="text-[10px] text-slate-500 mt-3">Breakdown Voltage Minyak Saat ini: <span class="font-mono text-slate-200">62.5 kV / 2.5mm</span> (Standar IEC 60156 OK)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thermography Scan & Relay Protection Test Records -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-panel p-5 rounded-xl border border-slate-800 space-y-3">
+                            <h3 class="font-bold text-slate-100 text-xs uppercase text-sky-400">Laporan Thermography Infrared</h3>
+                            <div class="space-y-2 text-xs" id="thermoList"></div>
+                        </div>
+                        <div class="glass-panel p-5 rounded-xl border border-slate-800 space-y-3">
+                            <h3 class="font-bold text-slate-100 text-xs uppercase text-indigo-400">Relay Protection Calibration Log</h3>
+                            <div class="space-y-2 text-xs" id="relayLogList"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= TAB 7: CBM & IOT TELEMETRY ================= -->
+                <section id="tab-cbm" class="tab-content hidden space-y-6">
+                    <div class="glass-panel p-5 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-tower-broadcast text-emerald-400"></i>
+                                    Condition-Based Maintenance (CBM) & SCADA Live Telemetry
+                                </h2>
+                                <p class="text-xs text-slate-400">Live feed telemetry sensor winding temperature, SF6 gas pressure, and current load.</p>
+                            </div>
+                            <span class="text-xs px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 animate-pulse">
+                                <i class="fa-solid fa-circle text-[8px] mr-1"></i> Telemetry Live
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="cbmFeedGrid"></div>
+                    </div>
+                </section>
+
+                <!-- ================= TAB 8: INVENTORY & SUPPLY CHAIN ================= -->
+                <section id="tab-inventory" class="tab-content hidden space-y-6">
+                    <div class="glass-panel p-5 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="font-bold text-slate-100 text-sm">Gudang Material & Spare Part Kelistrikan</h2>
+                            <button id="btnOpenAddSpare" class="px-3 py-1.5 bg-sky-600 text-white text-xs rounded-lg">+ Add Part Catalog</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-300">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px]">
+                                    <tr>
+                                        <th class="p-2.5">Nama Spare Part / Spec</th>
+                                        <th class="p-2.5">Lokasi Gudang</th>
+                                        <th class="p-2.5">Stok</th>
+                                        <th class="p-2.5">Harga / Unit</th>
+                                        <th class="p-2.5">Status Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTableBody" class="divide-y divide-slate-800"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= TAB 9: BILLING & CLIENT PORTAL ================= -->
+                <section id="tab-billing" class="tab-content hidden space-y-6">
+                    <div class="glass-panel p-5 rounded-xl border border-slate-800">
+                        <h2 class="font-bold text-slate-100 text-sm mb-2">Project Service Quotation & Client WO Billing</h2>
+                        <p class="text-xs text-slate-400 mb-4">Ringkasan tagihan pemeliharaan kelistrikan multi-klien dan SLA compliance.</p>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-300">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px]">
+                                    <tr>
+                                        <th class="p-3">Nama Client / Owner</th>
+                                        <th class="p-3">Project Site</th>
+                                        <th class="p-3">SLA Target</th>
+                                        <th class="p-3">Total WO Completed</th>
+                                        <th class="p-3">Total Estimated Billing</th>
+                                        <th class="p-3">Status Invoicing</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800">
+                                    <tr>
+                                        <td class="p-3 font-bold text-slate-200">PT PLN (Persero) UPT</td>
+                                        <td class="p-3 text-slate-300">GI Cilegon 150kV</td>
+                                        <td class="p-3 text-emerald-400 font-semibold">99.5% (Achieved)</td>
+                                        <td class="p-3 font-mono">14 WO</td>
+                                        <td class="p-3 font-mono text-slate-200">Rp 185.000.000</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[10px]">Invoiced & Paid</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 font-bold text-slate-200">PT Data Center Nusantara</td>
+                                        <td class="p-3 text-slate-300">Substation Bintaro 20kV</td>
+                                        <td class="p-3 text-emerald-400 font-semibold">100% (Achieved)</td>
+                                        <td class="p-3 font-mono">8 WO</td>
+                                        <td class="p-3 font-mono text-slate-200">Rp 92.500.000</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded bg-amber-950 text-amber-400 text-[10px]">Pending Client Review</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= TAB 10: SETTINGS & OFFLINE SYNC ================= -->
+                <section id="tab-settings" class="tab-content hidden space-y-6">
+                    <div class="glass-panel p-5 rounded-xl border border-slate-800 max-w-2xl space-y-4">
+                        <h2 class="font-bold text-slate-100 text-sm">System Setting & PWA Offline Local Storage</h2>
+                        <p class="text-xs text-slate-400">Seluruh state aplikasi disimpan di browser `localStorage` sehingga dapat digunakan sepenuhnya tanpa internet saat pengujian di gardu induk.</p>
+                        
+                        <div class="flex gap-3">
+                            <button id="btnExportData" class="flex-1 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-semibold">
+                                <i class="fa-solid fa-download mr-1"></i> Export JSON Backup
+                            </button>
+                            <button id="btnResetData" class="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded text-xs font-semibold">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Reset Factory Sample
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-950 p-3 rounded font-mono text-[11px] text-slate-400 h-28 overflow-y-auto space-y-1" id="syncLogBox">
+                            <div>[System] System initialized successfully.</div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: ADD ASSET -->
+    <div id="modalAddAsset" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="font-bold text-slate-100 text-sm"><i class="fa-solid fa-plus-circle text-emerald-400 mr-2"></i>Registrasi Aset Kelistrikan Baru</h3>
+                <button class="closeModal text-slate-400 hover:text-white">&times;</button>
+            </div>
+            <form id="formAddAsset" class="p-4 space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">ID Aset (e.g., TRF-150-02)</label>
+                    <input type="text" id="inputAssetId" required class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Nama Aset / Equipment</label>
+                    <input type="text" id="inputAssetName" required class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Kategori</label>
+                        <select id="inputAssetCategory" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+                            <option value="Transformer">Transformer</option>
+                            <option value="MV Switchgear">MV Switchgear</option>
+                            <option value="Substation Relay">Substation Relay</option>
+                            <option value="HV Disconnector">HV Disconnector</option>
+                            <option value="LV Panel">LV Panel</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Kelas Tegangan</label>
+                        <input type="text" id="inputAssetVoltage" placeholder="e.g. 150kV / 20kV" required class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Kapasitas / Rating</label>
+                        <input type="text" id="inputAssetRating" placeholder="e.g. 60 MVA / 1250A" required class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Site / Gardu</label>
+                        <select id="inputAssetSite" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+                            <option value="GI Cilegon 150kV">GI Cilegon 150kV</option>
+                            <option value="Substation Bintaro 20kV">Substation Bintaro 20kV</option>
+                            <option value="Indramayu Substation">Indramayu Substation</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-800">
+                    <button type="button" class="closeModal px-3 py-1.5 rounded bg-slate-800 text-slate-300">Batal</button>
+                    <button type="submit" class="px-4 py-1.5 rounded bg-emerald-600 text-white font-medium">Simpan Aset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CREATE WORK ORDER -->
+    <div id="modalCreateWO" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="font-bold text-slate-100 text-sm"><i class="fa-solid fa-clipboard-check text-sky-400 mr-2"></i>Buat Work Order Baru</h3>
+                <button class="closeModal text-slate-400 hover:text-white">&times;</button>
+            </div>
+            <form id="formCreateWO" class="p-4 space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Judul Pekerjaan Maintenance</label>
+                    <input type="text" id="inputWoTitle" required placeholder="Contoh: Pengujian Minyak DGA & Kalibrasi Relay Trafo 1" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Pilih Aset Kelistrikan</label>
+                        <select id="inputWoAsset" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200"></select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Prioritas</label>
+                        <select id="inputWoPriority" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+                            <option value="Rendah">Rendah (Rutin)</option>
+                            <option value="Sedang">Sedang (Terjadwal)</option>
+                            <option value="Tinggi">Tinggi (Mendesak)</option>
+                            <option value="Darurat">Darurat (Tripped/Outage)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Lead Engineer / Teknisi Assign</label>
+                        <select id="inputWoEngineer" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200"></select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Status Safety Clearance / Permit</label>
+                        <select id="inputWoPermit" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+                            <option value="Izin K3 Approved">Izin K3 Approved (Working Permit On)</option>
+                            <option value="Pending Safety Review">Pending Safety Review</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Estimasi Biaya Material & Service (Rp)</label>
+                    <input type="number" id="inputWoCost" placeholder="5000000" required class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+                </div>
+                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-800">
+                    <button type="button" class="closeModal px-3 py-1.5 rounded bg-slate-800 text-slate-300">Batal</button>
+                    <button type="submit" class="px-4 py-1.5 rounded bg-sky-600 text-white font-medium">Terbitkan Work Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: QR SCANNER SIMULATION -->
+    <div id="modalQrScanner" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-5 text-center space-y-4">
+            <h3 class="font-bold text-slate-100 text-sm"><i class="fa-solid fa-qrcode text-amber-400 mr-2"></i>Scan Asset QR / RFID Tag</h3>
+            <div class="w-48 h-48 mx-auto bg-slate-950 border-2 border-dashed border-sky-500 rounded-xl flex items-center justify-center relative">
+                <i class="fa-solid fa-camera text-slate-600 text-3xl"></i>
+                <div class="absolute inset-x-0 h-0.5 bg-amber-400 animate-pulse-fast"></div>
+            </div>
+            <p class="text-xs text-slate-400">Arahkan kamera ke QR Code panel cubicle atau trafo.</p>
+            <div class="flex justify-center gap-2">
+                <button onclick="simulateQrScan('TRF-150-01')" class="px-3 py-1.5 bg-sky-600 text-white text-xs rounded">Simulasi Scan Trafo 1</button>
+                <button class="closeModal px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           APPLICATION STATE & PERSISTENCE
+           ========================================================================== */
+        const DEFAULT_DATA = {
+            currentUser: null,
+            assets: [
+                { id: "TRF-150-01", name: "Power Transformer 60MVA", category: "Transformer", voltage: "150kV / 20kV", site: "GI Cilegon 150kV", rating: "60 MVA", hm: 14200, status: "Operational" },
+                { id: "CB-20-C01", name: "Vacuum Circuit Breaker Outgoing 1", category: "MV Switchgear", voltage: "20kV", site: "Substation Bintaro 20kV", rating: "1250A 25kA", hm: 8900, status: "Operational" },
+                { id: "RLY-SEL-751", name: "Feeder Protection Relay SEL-751", category: "Substation Relay", voltage: "20kV Control", site: "Substation Bintaro 20kV", rating: "ANSI 50/51/51N", hm: 21000, status: "Operational" },
+                { id: "DS-500-A2", name: "HV Disconnector Busbar A2", category: "HV Disconnector", voltage: "500kV", site: "Indramayu Substation", rating: "3150A", hm: 6500, status: "Tripped/Failed" },
+                { id: "LVP-MAIN-01", name: "Main Distribution Low Voltage Panel", category: "LV Panel", voltage: "380V/220V", site: "GI Cilegon 150kV", rating: "2500A Main MCCB", hm: 18300, status: "Maintenance" }
+            ],
+            workOrders: [
+                { id: "WO-2026-081", title: "Testing Minyak Trafo (DGA & Breakdown Voltage)", assetId: "TRF-150-01", site: "GI Cilegon 150kV", priority: "Sedang", status: "In Progress", engineer: "Eng. Hendra W.", permit: "Izin K3 Approved", cost: 12500000 },
+                { id: "WO-2026-082", title: "Inspeksi Thermography & Resistance Test Disconnector", assetId: "DS-500-A2", site: "Indramayu Substation", priority: "Darurat", status: "Pending Approval", engineer: "Rizky K3-Listrik", permit: "Pending Safety Review", cost: 8000000 },
+                { id: "WO-2026-083", title: "Pengantian Vacuum Interrupter Breaker Outgoing", assetId: "CB-20-C01", site: "Substation Bintaro 20kV", priority: "Tinggi", status: "Scheduled", engineer: "Agus Substation", permit: "Izin K3 Approved", cost: 24000000 }
+            ],
+            engineers: [
+                { name: "Eng. Hendra W.", role: "Super Admin / HV Lead" },
+                { name: "Rizky K3-Listrik", role: "Safety & Protection Spec." },
+                { name: "Agus Substation", role: "MV Switchgear Specialist" }
+            ],
+            loto: [
+                { tagNo: "LOTO-2026-001", asset: "DS-500-A2", isolatedBy: "Rizky K3-Listrik", padlockCount: 3, status: "LOCKED & TAGGED" },
+                { tagNo: "LOTO-2026-002", asset: "LVP-MAIN-01", isolatedBy: "Agus Substation", padlockCount: 2, status: "ZERO ENERGY VERIFIED" }
+            ],
+            inventory: [
+                { name: "Gas SF6 Cylinder (50kg)", location: "Gudang Cilegon", stock: 12, unit: "Tabung", price: 6500000, status: "Normal" },
+                { name: "Molykote Electrical Grease", location: "Gudang Bintaro", stock: 2, unit: "Can", price: 1200000, status: "Low Stock" }
+            ]
+        };
+
+        class AppState {
+            constructor() {
+                this.load();
+                this.selectedSite = "ALL";
+                this.isOnline = true;
+            }
+            load() {
+                const stored = localStorage.getItem("powergrid_cmms_v2");
+                if (stored) {
+                    try { this.data = JSON.parse(stored); } catch (e) { this.data = JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+                } else {
+                    this.data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                    this.save();
+                }
+            }
+            save() {
+                localStorage.setItem("powergrid_cmms_v2", JSON.stringify(this.data));
+                this.logSync("Data otomatis disinkronkan ke LocalStorage.");
+            }
+            reset() {
+                this.data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                this.save();
+            }
+            logSync(msg) {
+                const box = document.getElementById("syncLogBox");
+                if (box) {
+                    const div = document.createElement("div");
+                    div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                    box.prepend(div);
+                }
+            }
+        }
+
+        const state = new AppState();
+        let chartHealth = null, chartWo = null;
+
+        // Login Presets Handler
+        function presetLogin(role) {
+            document.getElementById('loginRole').value = role;
+            if (role === 'admin') { document.getElementById('loginUsername').value = 'admin_hv'; }
+            else if (role === 'lead') { document.getElementById('loginUsername').value = 'lead_eng'; }
+            else if (role === 'tech') { document.getElementById('loginUsername').value = 'tech_field'; }
+            else if (role === 'client') { document.getElementById('loginUsername').value = 'client_owner'; }
+        }
+
+        // Initialize Charts
+        function initCharts() {
+            const ctx1 = document.getElementById('assetHealthChart').getContext('2d');
+            chartHealth = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Operational', 'Maintenance', 'Tripped'],
+                    datasets: [{ data: [18, 4, 2], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } } } }
+            });
+
+            const ctx2 = document.getElementById('woStatusChart').getContext('2d');
+            chartWo = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+                    datasets: [{ label: 'WO Completed', data: [12, 19, 15, 22, 18, 24], backgroundColor: '#0284c7', borderRadius: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#64748b' } }, x: { ticks: { color: '#64748b' } } } }
+            });
+        }
+
+        // Render Functions
+        function renderAll() {
+            // Asset Table
+            const assetBody = document.getElementById('assetTableBody');
+            assetBody.innerHTML = '';
+            state.data.assets.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3"><div class="font-bold text-slate-100">${a.name}</div><div class="text-[10px] text-sky-400 font-mono">${a.id}</div></td>
+                    <td class="p-3"><div>${a.category}</div><div class="text-[10px] text-slate-400">${a.voltage}</div></td>
+                    <td class="p-3">${a.site}</td>
+                    <td class="p-3 font-mono">${a.rating}</td>
+                    <td class="p-3 font-mono">${a.hm.toLocaleString()} h</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${a.status === 'Operational' ? 'bg-emerald-950 text-emerald-400' : 'bg-rose-950 text-rose-400'}">${a.status}</span></td>
+                    <td class="p-3 text-right"><button onclick="deleteAsset('${a.id}')" class="text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash"></i></button></td>
+                `;
+                assetBody.appendChild(tr);
+            });
+
+            // WO Tables & Kanban
+            const woBody = document.getElementById('woTableBody');
+            const dashWo = document.getElementById('dashboardWoTable');
+            woBody.innerHTML = ''; dashWo.innerHTML = '';
+
+            state.data.workOrders.forEach(w => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 font-mono font-bold text-sky-400">${w.id}</td>
+                    <td class="p-3 font-medium text-slate-200">${w.title}</td>
+                    <td class="p-3 font-mono">${w.assetId}</td>
+                    <td class="p-3 text-slate-300">${w.engineer}</td>
+                    <td class="p-3"><span class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400">${w.permit}</span></td>
+                    <td class="p-3 font-mono">Rp ${Number(w.cost).toLocaleString()}</td>
+                    <td class="p-3"><span class="text-[10px] px-2.5 py-1 rounded bg-slate-800 text-slate-200">${w.status}</span></td>
+                    <td class="p-3 text-right">
+                        <select onchange="updateWoStatus('${w.id}', this.value)" class="bg-slate-950 border border-slate-700 text-[10px] rounded p-1 text-slate-300">
+                            <option value="Pending Approval" ${w.status==='Pending Approval'?'selected':''}>Pending</option>
+                            <option value="Scheduled" ${w.status==='Scheduled'?'selected':''}>Scheduled</option>
+                            <option value="In Progress" ${w.status==='In Progress'?'selected':''}>In Progress</option>
+                            <option value="Completed" ${w.status==='Completed'?'selected':''}>Completed</option>
+                        </select>
+                    </td>
+                `;
+                woBody.appendChild(tr);
+
+                const dTr = tr.cloneNode(true);
+                dTr.removeChild(dTr.lastChild);
+                dashWo.appendChild(dTr);
+            });
+
+            // LOTO List
+            const lotoList = document.getElementById('lotoRegisterList');
+            lotoList.innerHTML = '';
+            state.data.loto.forEach(l => {
+                const div = document.createElement('div');
+                div.className = "p-3 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-xs";
+                div.innerHTML = `
+                    <div>
+                        <div class="font-bold text-rose-400 font-mono">${l.tagNo} - ${l.asset}</div>
+                        <div class="text-[10px] text-slate-400">Isolated By: ${l.isolatedBy} (${l.padlockCount} Padlocks)</div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-bold text-[10px]">${l.status}</span>
+                `;
+                lotoList.appendChild(div);
+            });
+
+            // CBM Telemetry Feed Grid
+            const cbmGrid = document.getElementById('cbmFeedGrid');
+            cbmGrid.innerHTML = `
+                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                    <div class="text-[10px] text-slate-400 uppercase">Trafo 1 Winding Temp</div>
+                    <div class="text-xl font-bold text-emerald-400 font-mono">54.2 °C</div>
+                    <div class="text-[9px] text-slate-500">Threshold Max: 85 °C</div>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                    <div class="text-[10px] text-slate-400 uppercase">SF6 Gas Pressure CB-01</div>
+                    <div class="text-xl font-bold text-sky-400 font-mono">6.2 Bar</div>
+                    <div class="text-[9px] text-slate-500">Nominal 6.0 - 6.5 Bar</div>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                    <div class="text-[10px] text-slate-400 uppercase">MV Busbar Load Current</div>
+                    <div class="text-xl font-bold text-amber-400 font-mono">820 Amp</div>
+                    <div class="text-[9px] text-slate-500">65% Capacity</div>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                    <div class="text-[10px] text-slate-400 uppercase">Dissolved H2 Gas Sensor</div>
+                    <div class="text-xl font-bold text-slate-200 font-mono">45 PPM</div>
+                    <div class="text-[9px] text-emerald-400">Normal Range</div>
+                </div>
+            `;
+
+            // Populate Modal Dropdowns
+            const assetSel = document.getElementById('inputWoAsset');
+            assetSel.innerHTML = '';
+            state.data.assets.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a.id; opt.textContent = `${a.id} - ${a.name}`;
+                assetSel.appendChild(opt);
+            });
+
+            const engSel = document.getElementById('inputWoEngineer');
+            engSel.innerHTML = '';
+            state.data.engineers.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.name; opt.textContent = e.name;
+                engSel.appendChild(opt);
+            });
+        }
+
+        // Actions
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('bg-sky-600', 'text-white'));
+            const target = document.getElementById(`tab-${tabId}`);
+            if (target) target.classList.remove('hidden');
+            const nav = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+            if (nav) nav.classList.add('bg-sky-600', 'text-white');
+        }
+
+        function updateWoStatus(id, newStatus) {
+            const wo = state.data.workOrders.find(w => w.id === id);
+            if (wo) { wo.status = newStatus; state.save(); renderAll(); }
+        }
+
+        function deleteAsset(id) {
+            state.data.assets = state.data.assets.filter(a => a.id !== id);
+            state.save(); renderAll();
+        }
+
+        function inspectSldNode(nodeId) {
+            alert(`Single Line Diagram Node Selected: ${nodeId}\n\nStatus: Active Monitoring & Telemetry Connected.`);
+        }
+
+        function simulateQrScan(assetId) {
+            document.getElementById('modalQrScanner').classList.add('hidden');
+            switchTab('assets');
+            document.getElementById('assetSearchInput').value = assetId;
+            renderAll();
+        }
+
+        function calculateDgaFault() {
+            document.getElementById('dgaResultBox').innerHTML = `<i class="fa-solid fa-check-circle text-emerald-400 mr-1"></i> Diagnosa Duval Triangle: Normal / Low Energy Partial Discharge (PD) detected.`;
+        }
+
+        // DOM Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+
+            // Form Login Listener
+            document.getElementById('loginForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const user = document.getElementById('loginUsername').value;
+                const role = document.getElementById('loginRole').value;
+                state.data.currentUser = { username: user, role: role };
+                
+                document.getElementById('userDisplayName').textContent = user;
+                document.getElementById('userDisplayRole').textContent = role.toUpperCase();
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                renderAll();
+            });
+
+            // Logout Listener
+            document.getElementById('btnLogout').addEventListener('click', () => {
+                document.getElementById('loginOverlay').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+            });
+
+            // Navigation Links
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchTab(btn.getAttribute('data-tab'));
+                });
+            });
+
+            // Modal Handlers
+            const modalAsset = document.getElementById('modalAddAsset');
+            const modalWo = document.getElementById('modalCreateWO');
+            const modalQr = document.getElementById('modalQrScanner');
+
+            document.getElementById('btnOpenAddAsset').addEventListener('click', () => modalAsset.classList.remove('hidden'));
+            document.getElementById('btnOpenCreateWO').addEventListener('click', () => modalWo.classList.remove('hidden'));
+            document.getElementById('btnQuickWO').addEventListener('click', () => modalWo.classList.remove('hidden'));
+            document.getElementById('btnOpenQrScanner').addEventListener('click', () => modalQr.classList.remove('hidden'));
+
+            document.querySelectorAll('.closeModal').forEach(b => {
+                b.addEventListener('click', () => {
+                    modalAsset.classList.add('hidden');
+                    modalWo.classList.add('hidden');
+                    modalQr.classList.add('hidden');
+                });
+            });
+
+            // Create Forms Submissions
+            document.getElementById('formAddAsset').addEventListener('submit', (e) => {
+                e.preventDefault();
+                state.data.assets.unshift({
+                    id: document.getElementById('inputAssetId').value,
+                    name: document.getElementById('inputAssetName').value,
+                    category: document.getElementById('inputAssetCategory').value,
+                    voltage: document.getElementById('inputAssetVoltage').value,
+                    site: document.getElementById('inputAssetSite').value,
+                    rating: document.getElementById('inputAssetRating').value,
+                    hm: 0, status: "Operational"
+                });
+                state.save(); renderAll(); modalAsset.classList.add('hidden');
+            });
+
+            document.getElementById('formCreateWO').addEventListener('submit', (e) => {
+                e.preventDefault();
+                state.data.workOrders.unshift({
+                    id: `WO-2026-${Math.floor(100+Math.random()*900)}`,
+                    title: document.getElementById('inputWoTitle').value,
+                    assetId: document.getElementById('inputWoAsset').value,
+                    site: "GI Cilegon 150kV",
+                    priority: document.getElementById('inputWoPriority').value,
+                    status: "Pending Approval",
+                    engineer: document.getElementById('inputWoEngineer').value,
+                    permit: document.getElementById('inputWoPermit').value,
+                    cost: Number(document.getElementById('inputWoCost').value)
+                });
+                state.save(); renderAll(); modalWo.classList.add('hidden');
+            });
+
+            // System Reset & Export
+            document.getElementById('btnExportData').addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: "application/json" });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `CMMS_Export_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+            });
+
+            document.getElementById('btnResetData').addEventListener('click', () => {
+                if (confirm("Reset seluruh data ke sampel bawaan pabrik?")) {
+                    state.reset(); renderAll();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
